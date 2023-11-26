@@ -5,9 +5,9 @@ from pygame.locals import DOUBLEBUF
 from pygame.locals import OPENGL
 import OpenGL.GL as gl
 import OpenGL.GLU as glu
-#from pygame.locals import *
-#from OpenGL.GL import *
-#from OpenGL.GLU import *
+# from pygame.locals import *
+# from OpenGL.GL import *
+# from OpenGL.GLU import *
 
 vertices = (
     (1, -1, -1),
@@ -69,6 +69,7 @@ void main() {
 }
 """
 
+
 def compile_shader(shader_type, source):
     shader = gl.glCreateShader(shader_type)
     gl.glShaderSource(shader, source)
@@ -76,6 +77,7 @@ def compile_shader(shader_type, source):
     if not gl.glGetShaderiv(shader, gl.GL_COMPILE_STATUS):
         raise RuntimeError(gl.glGetShaderInfoLog(shader))
     return shader
+
 
 def create_shader_program(vertex_source, fragment_source):
     vertex_shader = compile_shader(gl.GL_VERTEX_SHADER, vertex_source)
@@ -94,6 +96,7 @@ def create_shader_program(vertex_source, fragment_source):
 
     return shader_program
 
+
 def draw_cube():
     gl.glBegin(gl.GL_LINES)
     for edge in edges:
@@ -101,12 +104,13 @@ def draw_cube():
             gl.glVertex3fv(vertices[vertex])
     gl.glEnd()
 
-#def draw_cube(shader_program):
+# def draw_cube(shader_program):
 #    gl.glBegin(gl.GL_LINES)
 #    for edge in edges:
 #        for vertex in edge:
 #            gl.glVertex3fv(vertices[vertex])
 #    gl.glEnd()
+
 
 def main():
     pygame.init()
@@ -135,11 +139,11 @@ def main():
         gl.glRotatef(1, 3, 1, 1)
         gl.glClear(int(gl.GL_COLOR_BUFFER_BIT) | int(gl.GL_DEPTH_BUFFER_BIT))
         gl.glUseProgram(current_shader_program)
-        #draw_cube(current_shader_program)
+        # draw_cube(current_shader_program)
         draw_cube()
         pygame.display.flip()
         pygame.time.wait(10)
 
+
 if __name__ == "__main__":
     main()
-
