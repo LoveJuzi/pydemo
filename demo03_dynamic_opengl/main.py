@@ -1,9 +1,13 @@
 #!/bin/python3
 
 import pygame
-from pygame.locals import *
-from OpenGL.GL import *
-from OpenGL.GLU import *
+from pygame.locals import DOUBLEBUF
+from pygame.locals import OPENGL
+import OpenGL.GL as gl
+import OpenGL.GLU as glu
+#from pygame.locals import *
+#from OpenGL.GL import *
+#from OpenGL.GLU import *
 
 vertices = (
     (1, -1, -1),
@@ -66,44 +70,51 @@ void main() {
 """
 
 def compile_shader(shader_type, source):
-    shader = glCreateShader(shader_type)
-    glShaderSource(shader, source)
-    glCompileShader(shader)
-    if not glGetShaderiv(shader, GL_COMPILE_STATUS):
-        raise RuntimeError(glGetShaderInfoLog(shader))
+    shader = gl.glCreateShader(shader_type)
+    gl.glShaderSource(shader, source)
+    gl.glCompileShader(shader)
+    if not gl.glGetShaderiv(shader, gl.GL_COMPILE_STATUS):
+        raise RuntimeError(gl.glGetShaderInfoLog(shader))
     return shader
 
 def create_shader_program(vertex_source, fragment_source):
-    vertex_shader = compile_shader(GL_VERTEX_SHADER, vertex_source)
-    fragment_shader = compile_shader(GL_FRAGMENT_SHADER, fragment_source)
+    vertex_shader = compile_shader(gl.GL_VERTEX_SHADER, vertex_source)
+    fragment_shader = compile_shader(gl.GL_FRAGMENT_SHADER, fragment_source)
 
-    shader_program = glCreateProgram()
-    glAttachShader(shader_program, vertex_shader)
-    glAttachShader(shader_program, fragment_shader)
-    glLinkProgram(shader_program)
+    shader_program = gl.glCreateProgram()
+    gl.glAttachShader(shader_program, vertex_shader)
+    gl.glAttachShader(shader_program, fragment_shader)
+    gl.glLinkProgram(shader_program)
 
-    if not glGetProgramiv(shader_program, GL_LINK_STATUS):
-        raise RuntimeError(glGetProgramInfoLog(shader_program))
+    if not gl.glGetProgramiv(shader_program, gl.GL_LINK_STATUS):
+        raise RuntimeError(gl.glGetProgramInfoLog(shader_program))
 
-    glDeleteShader(vertex_shader)
-    glDeleteShader(fragment_shader)
+    gl.glDeleteShader(vertex_shader)
+    gl.glDeleteShader(fragment_shader)
 
     return shader_program
 
-def draw_cube(shader_program):
-    glBegin(GL_LINES)
+def draw_cube():
+    gl.glBegin(gl.GL_LINES)
     for edge in edges:
         for vertex in edge:
-            glVertex3fv(vertices[vertex])
-    glEnd()
+            gl.glVertex3fv(vertices[vertex])
+    gl.glEnd()
+
+#def draw_cube(shader_program):
+#    gl.glBegin(gl.GL_LINES)
+#    for edge in edges:
+#        for vertex in edge:
+#            gl.glVertex3fv(vertices[vertex])
+#    gl.glEnd()
 
 def main():
     pygame.init()
     display = (800, 600)
     pygame.display.set_mode(display, DOUBLEBUF | OPENGL)
 
-    gluPerspective(45, (display[0] / display[1]), 0.1, 50.0)
-    glTranslatef(0.0, 0.0, -5)
+    glu.gluPerspective(45, (display[0] / display[1]), 0.1, 50.0)
+    gl.glTranslatef(0.0, 0.0, -5)
 
     shader_program1 = create_shader_program(vertex_shader1, fragment_shader1)
     shader_program2 = create_shader_program(vertex_shader2, fragment_shader2)
@@ -121,10 +132,11 @@ def main():
                     # 切换着色器程序
                     current_shader_program = shader_program2 if current_shader_program == shader_program1 else shader_program1
 
-        glRotatef(1, 3, 1, 1)
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-        glUseProgram(current_shader_program)
-        draw_cube(current_shader_program)
+        gl.glRotatef(1, 3, 1, 1)
+        gl.glClear(int(gl.GL_COLOR_BUFFER_BIT) | int(gl.GL_DEPTH_BUFFER_BIT))
+        gl.glUseProgram(current_shader_program)
+        #draw_cube(current_shader_program)
+        draw_cube()
         pygame.display.flip()
         pygame.time.wait(10)
 
