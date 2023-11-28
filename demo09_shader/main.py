@@ -2,64 +2,12 @@
 
 from pygame.locals import DOUBLEBUF
 from pygame.locals import OPENGL
+from res import resourceFile
+from shader import Shader
 import OpenGL.GL as gl
 import OpenGL.GLU as glu
 import ctypes
 import pygame
-from shader import Shader
-
-vertex_shader1 = """
-#version 330 core
-layout (location = 0) in vec3 aPos;
-layout (location = 1) in vec3 aColor;
-
-out vec3 ourColor;
-
-void main() {
-    gl_Position = vec4(aPos, 1.0);
-    ourColor = aColor;
-}
-"""
-
-fragment_shader1 = """
-#version 330 core
-out vec4 FragColor;
-
-in vec3 ourColor;
-
-void main() {
-    FragColor = vec4(ourColor, 1.0);
-}
-"""
-
-
-def compileShader(shaderType, source):
-    shader = gl.glCreateShader(shaderType)
-    gl.glShaderSource(shader, source)
-    gl.glCompileShader(shader)
-
-    if not gl.glGetShaderiv(shader, gl.GL_COMPILE_STATUS):
-        raise RuntimeError(gl.glGetShaderInfoLog(shader))
-
-    return shader
-
-
-def createShaderProgram(vertexSource, fragmentSource):
-    vertexShader = compileShader(gl.GL_VERTEX_SHADER, vertexSource)
-    fragmentShader = compileShader(gl.GL_FRAGMENT_SHADER, fragmentSource)
-
-    shaderProgram = gl.glCreateProgram()
-    gl.glAttachShader(shaderProgram, vertexShader)
-    gl.glAttachShader(shaderProgram, fragmentShader)
-    gl.glLinkProgram(shaderProgram)
-
-    if not gl.glGetProgramiv(shaderProgram, gl.GL_LINK_STATUS):
-        raise RuntimeError(gl.glGetProgramInfoLog(shaderProgram))
-
-    gl.glDeleteShader(vertexShader)
-    gl.glDeleteShader(fragmentShader)
-
-    return shaderProgram
 
 
 def main():
@@ -100,7 +48,7 @@ def main():
     gl.glBindVertexArray(0)
     gl.glBindBuffer(gl.GL_ARRAY_BUFFER, 0)
 
-    shaderProgram = createShaderProgram(vertex_shader1, fragment_shader1)
+    shader = Shader().init(resourceFile("shader.vs"), resourceFile("shader.fs"))
 
     while True:
         processInput()
@@ -108,7 +56,7 @@ def main():
         gl.glClearColor(0.2, 0.3, 0.3, 1.0)
         gl.glClear(int(gl.GL_COLOR_BUFFER_BIT) | int(gl.GL_DEPTH_BUFFER_BIT))
 
-        gl.glUseProgram(shaderProgram)
+        shader.use()
 
         gl.glBindVertexArray(VAO)
         gl.glDrawArrays(gl.GL_TRIANGLES, 0, 3)
