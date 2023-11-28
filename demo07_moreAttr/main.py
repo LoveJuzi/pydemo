@@ -5,7 +5,6 @@ from pygame.locals import OPENGL
 import OpenGL.GL as gl
 import OpenGL.GLU as glu
 import ctypes
-import math
 import pygame
 
 vertex_shader1 = """
