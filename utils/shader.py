@@ -1,6 +1,7 @@
 #!/bin/python3
 
 import OpenGL.GL as gl
+import glm
 
 
 class Shader:
@@ -36,6 +37,11 @@ class Shader:
 
     def setFloat(self, name, val):
         gl.glUniform1f(gl.glGetUniformLocation(self.getProgramId(), name), val)
+
+    def setMat4(self, name, val):
+        gl.glUniformMatrix4fv(gl.glGetUniformLocation(self.getProgramId(), name),
+                              1, gl.GL_FALSE,
+                              glm.value_ptr(val))
 
 
 def _compileShader(shaderType, source):
