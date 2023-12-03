@@ -38,6 +38,13 @@ class Shader:
     def setFloat(self, name, val):
         gl.glUniform1f(gl.glGetUniformLocation(self.getProgramId(), name), val)
 
+    def setVec3v(self, name, val):
+        gl.glUniform3fv(gl.glGetUniformLocation(self.getProgramId(), name), 1,
+                        glm.value_ptr(val))
+
+    def setVec3(self, name, x, y, z):
+        gl.glUniform3f(gl.glGetUniformLocation(self.getProgramId(), name), x, y, z)
+
     def setMat4(self, name, val):
         gl.glUniformMatrix4fv(gl.glGetUniformLocation(self.getProgramId(), name),
                               1, gl.GL_FALSE,
