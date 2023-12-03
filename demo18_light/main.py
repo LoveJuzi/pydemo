@@ -240,15 +240,6 @@ def main():
         objectShader.setVec3v("objectColor", objectColor)
         objectShader.setVec3v("lightColor", lightColor)
 
-        #objectShader.setVec3("objectColor",
-        #                     objectColor.x,
-        #                     objectColor.y,
-        #                     objectColor.z)
-        #objectShader.setVec3("lightColor",
-        #                     lightColor.x,
-        #                     lightColor.y,
-        #                     lightColor.z)
-
         objectShader.setMat4("model", objectModel)
         objectShader.setMat4("view", gameParam.camera().view())
         objectShader.setMat4("projection", gameParam.projection())
