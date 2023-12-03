@@ -184,8 +184,8 @@ def main():
 
     gameParam = GameParam(display[0], display[1])
 
-    #pygame.mouse.set_visible(False)
-    #pygame.event.set_grab(True)
+    pygame.mouse.set_visible(False)
+    pygame.event.set_grab(True)
 
     while True:
         pygame.mouse.set_visible(False)
@@ -226,11 +226,6 @@ def main():
 
         pygame.display.flip()
         clock.tick(60)
-
-    gl.glDeleteVertexArrays(1, VAO)
-    gl.glDeleteBuffers(1, VBO)
-    gl.glDeleteTextures(1, texture1)
-    gl.glDeleteTextures(1, texture2)
 
     pygame.quit()
 

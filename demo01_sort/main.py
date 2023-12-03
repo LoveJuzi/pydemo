@@ -5,12 +5,11 @@ def printArr(arr):
         print(item, end=" ")
     print("")
 
-def insertSort(arr, N):
-    pass
 
 def main():
     arr = [1, 2, 3, 4, 5, 6]
     printArr(arr)
     pass
+
 
 main()

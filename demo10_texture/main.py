@@ -125,9 +125,8 @@ def main():
         pygame.display.flip()
         pygame.time.wait(30)
 
-    gl.glDeleteVertexArrays(1, VAO)
-    gl.glDeleteBuffers(1, VBO)
-    # gl.glDeleteBuffers(1, EBO)
+    # gl.glDeleteBuffers(1, VBO)
+    # gl.glDeleteVertexArrays(1, VAO)
 
     pygame.quit()
 
