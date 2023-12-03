@@ -1,5 +1,6 @@
 #!/bin/python3
 
+from camera import Camera, CameraMovement
 from pygame.locals import DOUBLEBUF
 from pygame.locals import OPENGL
 from res import loadTexture
@@ -7,32 +8,9 @@ from res import resourceFile
 from shader import Shader
 import ctypes
 import glm
-import math
 import numpy as np
 import OpenGL.GL as gl
 import pygame
-
-
-class Camera:
-    def __init__(self):
-        self._pos = glm.vec3(0, 0, 3)
-        self._front = glm.vec3(0, 0, -1)
-        self._up = glm.vec3(0, 1, 0)
-
-    def pos(self): return self._pos
-
-    def setPos(self, pos):  self._pos = pos
-
-    def front(self): return self._front
-
-    def setFront(self, front): self._front = front
-
-    def up(self): return self._up
-
-    def setUp(self, up): self._up = up
-
-    def view(self):
-        return glm.lookAt(self._pos, self._pos + self._front, self._up)
 
 
 def getCubePositions():
@@ -104,14 +82,8 @@ class GameParam:
             glm.radians(45.0), screenWidth/screenHeight, 0.1, 100)
 
         self._centerPos = (screenWidth/2.0, screenHeight/2.0)
-        self._yaw = -90
-        self._pitch = 0
-
-        self._camera.setFront(self.getDirection())
 
     def camera(self): return self._camera
-
-    def cameraSpeed(self): return 2.5 * self.deltaTime()
 
     def deltaTime(self): return self._deltaTime
 
@@ -125,33 +97,10 @@ class GameParam:
 
     def getCenterPos(self): return self._centerPos
 
-    def yaw(self): return self._yaw
-
-    def pitch(self): return self._pitch
-
-    def setYaw(self, yaw): self._yaw = yaw
-
-    def setPitch(self, pitch):
-        if pitch > 89.0:
-            self._pitch = 89.0
-        elif pitch < -89.0:
-            self._pitch = -89.0
-        else:
-            self._pitch = pitch
-
-    def getDirection(self):
-        direction = glm.vec3()
-        direction.x = math.cos(glm.radians(self.pitch())) * \
-            math.cos(glm.radians(self.yaw()))
-        direction.y = math.sin(glm.radians(self.pitch()))
-        direction.z = math.cos(glm.radians(self.pitch())) * \
-            math.sin(glm.radians(self.yaw()))
-        return glm.normalize(direction)
-
-    def sensitivity(self): return 0.05
-
 
 def processInput(gameParam):
+    camera = gameParam.camera()
+
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             return False
@@ -160,27 +109,18 @@ def processInput(gameParam):
             xoffset = event.pos[0] - gameParam.getCenterPos()[0]
             yoffset = event.pos[1] - gameParam.getCenterPos()[1]
             pygame.mouse.set_pos(gameParam.getCenterPos())
-            xoffset *= gameParam.sensitivity()
-            yoffset *= gameParam.sensitivity()
-            gameParam.setYaw(gameParam.yaw() + xoffset)
-            gameParam.setPitch(gameParam.pitch() + yoffset)
-            gameParam.camera().setFront(gameParam.getDirection())
-
-    camera = gameParam.camera()
-    cameraSpeed = gameParam.cameraSpeed()
+            camera.processMouseMovment(xoffset, yoffset)
 
     keys = pygame.key.get_pressed()
 
     if keys[pygame.K_w]:
-        camera.setPos(camera.pos() + cameraSpeed * camera.front())
+        camera.processKeyborad(CameraMovement.FORWARD, gameParam.deltaTime())
     if keys[pygame.K_s]:
-        camera.setPos(camera.pos() - cameraSpeed * camera.front())
+        camera.processKeyborad(CameraMovement.BACKWARD, gameParam.deltaTime())
     if keys[pygame.K_a]:
-        camera.setPos(camera.pos() - cameraSpeed *
-                      glm.normalize(glm.cross(camera.front(), camera.up())))
+        camera.processKeyborad(CameraMovement.LEFT, gameParam.deltaTime())
     if keys[pygame.K_d]:
-        camera.setPos(camera.pos() + cameraSpeed *
-                      glm.normalize(glm.cross(camera.front(), camera.up())))
+        camera.processKeyborad(CameraMovement.RIGHT, gameParam.deltaTime())
 
     return True
 
