@@ -5,10 +5,11 @@ from pygame.locals import OPENGL
 from res import loadTexture
 from res import resourceFile
 from shader import Shader
-import OpenGL.GL as gl
 import ctypes
 import glm
+import math
 import numpy as np
+import OpenGL.GL as gl
 import pygame
 
 
@@ -102,6 +103,12 @@ class GameParam:
         self._projection = glm.perspective(
             glm.radians(45.0), screenWidth/screenHeight, 0.1, 100)
 
+        self._centerPos = (screenWidth/2.0, screenHeight/2.0)
+        self._yaw = -90
+        self._pitch = 0
+
+        self._camera.setFront(self.getDirection())
+
     def camera(self): return self._camera
 
     def cameraSpeed(self): return 2.5 * self.deltaTime()
@@ -116,11 +123,48 @@ class GameParam:
 
     def projection(self): return self._projection
 
+    def getCenterPos(self): return self._centerPos
+
+    def yaw(self): return self._yaw
+
+    def pitch(self): return self._pitch
+
+    def setYaw(self, yaw): self._yaw = yaw
+
+    def setPitch(self, pitch):
+        if pitch > 89.0:
+            self._pitch = 89.0
+        elif pitch < -89.0:
+            self._pitch = -89.0
+        else:
+            self._pitch = pitch
+
+    def getDirection(self):
+        direction = glm.vec3()
+        direction.x = math.cos(glm.radians(self.pitch())) * \
+            math.cos(glm.radians(self.yaw()))
+        direction.y = math.sin(glm.radians(self.pitch()))
+        direction.z = math.cos(glm.radians(self.pitch())) * \
+            math.sin(glm.radians(self.yaw()))
+        return glm.normalize(direction)
+
+    def sensitivity(self): return 0.05
+
 
 def processInput(gameParam):
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             return False
+
+        if event.type == pygame.MOUSEMOTION:
+            xoffset = event.pos[0] - gameParam.getCenterPos()[0]
+            yoffset = event.pos[1] - gameParam.getCenterPos()[1]
+            pygame.mouse.set_pos(gameParam.getCenterPos())
+            xoffset *= gameParam.sensitivity()
+            yoffset *= gameParam.sensitivity()
+            gameParam.setYaw(gameParam.yaw() + xoffset)
+            gameParam.setPitch(gameParam.pitch() + yoffset)
+            gameParam.camera().setFront(gameParam.getDirection())
 
     camera = gameParam.camera()
     cameraSpeed = gameParam.cameraSpeed()
