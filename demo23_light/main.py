@@ -189,18 +189,18 @@ def main():
 
     cubeVAO = buildCubeVAO(VBO)
 
-    lightVAO = buildLightVAO(VBO)
+    # lightVAO = buildLightVAO(VBO)
 
     lightColor = glm.vec3(1.0, 1.0, 1.0)
 
     diffuseMap = loadTexture(resourceFile("container2.png"))
     specularMap = loadTexture(resourceFile("container2_specular.png"))
 
-    lightShader = Shader().init(resourceFile("shader18_light.vs"),
-                                resourceFile("shader18_light.fs"))
+    # lightShader = Shader().init(resourceFile("shader18_light.vs"),
+    #                            resourceFile("shader18_light.fs"))
 
     objectShader = Shader().init(resourceFile("shader21_obj.vs"),
-                                 resourceFile("shader22_obj.fs"))
+                                 resourceFile("shader23_obj.fs"))
 
     gl.glEnable(gl.GL_DEPTH_TEST)
 
@@ -209,6 +209,8 @@ def main():
     objectPos = glm.vec3(0, 0, 0)
 
     lightPos = glm.vec3(1.2, 1, 2)
+
+    lightDirection = glm.vec3(-0.2, -1, -0.3)
 
     objectModel = glm.translate(glm.mat4(1), objectPos)
 
@@ -219,6 +221,8 @@ def main():
 
     pygame.mouse.set_visible(False)
     pygame.event.set_grab(True)
+
+    cubePositions = getCubePositions()
 
     while True:
         gameParam.setDeltaTime(
@@ -231,14 +235,14 @@ def main():
         gl.glClearColor(0.1, 0.1, 0.1, 1.0)
         gl.glClear(int(gl.GL_COLOR_BUFFER_BIT) | int(gl.GL_DEPTH_BUFFER_BIT))
 
-        lightShader.use()
+        # lightShader.use()
 
-        lightShader.setMat4("model", lightModel)
-        lightShader.setMat4("view", gameParam.camera().view())
-        lightShader.setMat4("projection", gameParam.projection())
+        # lightShader.setMat4("model", lightModel)
+        # lightShader.setMat4("view", gameParam.camera().view())
+        # lightShader.setMat4("projection", gameParam.projection())
 
-        gl.glBindVertexArray(lightVAO)
-        gl.glDrawArrays(gl.GL_TRIANGLES, 0, data.size)
+        # gl.glBindVertexArray(lightVAO)
+        # gl.glDrawArrays(gl.GL_TRIANGLES, 0, data.size)
 
         objectShader.use()
 
@@ -246,7 +250,8 @@ def main():
         objectShader.setInt("material.specular", 1)
         objectShader.setFloat("material.shiniess", 32.0)
 
-        objectShader.setVec3v("light.position", lightPos)
+        # objectShader.setVec3v("light.position", lightPos)
+        objectShader.setVec3v("light.direction", lightDirection)
         objectShader.setVec3v("light.ambient", 0.2 * lightColor)
         objectShader.setVec3v("light.diffuse", 0.5 * lightColor)
         objectShader.setVec3v("light.specular", lightColor)
@@ -263,7 +268,15 @@ def main():
         gl.glBindTexture(gl.GL_TEXTURE_2D, specularMap)
 
         gl.glBindVertexArray(cubeVAO)
-        gl.glDrawArrays(gl.GL_TRIANGLES, 0, data.size)
+        for index, cubePos in enumerate(cubePositions):
+            model = glm.mat4()
+            model = glm.translate(model, cubePos)
+            angle = 20.0 * index
+            model = glm.rotate(model,
+                               glm.radians(angle),
+                               glm.vec3(1, 0.3, 0.5))
+            objectShader.setMat4("model", model)
+            gl.glDrawArrays(gl.GL_TRIANGLES, 0, data.size)
 
         gl.glBindVertexArray(0)
 
@@ -271,6 +284,7 @@ def main():
         clock.tick(60)
 
     pygame.quit()
+
 
 if __name__ == "__main__":
     main()
