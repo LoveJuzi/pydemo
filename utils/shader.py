@@ -11,11 +11,11 @@ class Shader:
     def init(self, vertexPath, fragmentPath):
         # 1. read code from path
         vertexCode = None
-        with open(vertexPath, 'r') as f:
+        with open(vertexPath, 'r', encoding='utf-8') as f:
             vertexCode = f.read()
 
         fragmentCode = None
-        with open(fragmentPath, 'r') as f:
+        with open(fragmentPath, 'r', encoding='utf-8') as f:
             fragmentCode = f.read()
 
         # 2. create shader
