@@ -1,4 +1,4 @@
-#!/bin/python3
+#!/usr/bin/python3
 
 import OpenGL.GL as gl
 import glm
