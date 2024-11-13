@@ -1,4 +1,4 @@
-#!/bin/python3
+#!/usr/bin/python3
 
 from pygame.locals import DOUBLEBUF
 from pygame.locals import OPENGL
