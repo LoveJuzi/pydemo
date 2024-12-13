@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 
-from utils import gcd
+from utils import pair, head, tail, llist, gcd
+
+from utils import list_equal
 
 import math
 
@@ -20,6 +22,14 @@ def mul(x, y):
 
 def div(x, y):
     return Arithmetic.apply(Arithmetic.div, x, y)
+
+
+def equal(x, y):
+    return Arithmetic.apply(Arithmetic.equal, x, y)
+
+
+def ari_print(x):
+    return Arithmetic.apply(Arithmetic.print, x)
 
 
 ###############################################################################
@@ -52,12 +62,39 @@ class Arithmetic:
         return None
 
     @staticmethod
-    def apply(f, x, y):
+    def wrap_param(x):
+        xt = type(x)
+        if xt == int:
+            return Integer(x)
+        if xt == float:
+            return Number(x)
+        return x
+
+    @staticmethod
+    def apply(f, *args):
+        wrap_args = [Arithmetic.wrap_param(arg) for arg in args]
+
+        arg_cnt = len(args)
+        if arg_cnt == 2:
+            return Arithmetic.apply_2param(f, *wrap_args)
+
+        return f(*wrap_args)
+
+    @staticmethod
+    def apply_2param(f, x, y):
         param = Arithmetic.convert_param(x, y)
         if param is None:
             # ERROR
             return None
         return f(param[0], param[1])
+
+    @staticmethod
+    def apply_2param_func(funcs, x, y):
+        k = Arithmetic.get_key(x, y)
+        if k not in funcs:
+            # ERROR
+            return None
+        return funcs[k](x, y)
 
     add_funcs = {}
 
@@ -67,11 +104,7 @@ class Arithmetic:
 
     @staticmethod
     def add(x, y):
-        k = Arithmetic.get_key(x, y)
-        if k not in Arithmetic.add_funcs:
-            # ERROR
-            return None
-        return Arithmetic.add_funcs[k](x, y)
+        return Arithmetic.apply_2param_func(Arithmetic.add_funcs, x, y)
 
     sub_funcs = {}
 
@@ -81,11 +114,7 @@ class Arithmetic:
 
     @staticmethod
     def sub(x, y):
-        k = Arithmetic.get_key(x, y)
-        if k not in Arithmetic.sub_funcs:
-            # ERROR
-            return None
-        return Arithmetic.sub_funcs[k](x, y)
+        return Arithmetic.apply_2param_func(Arithmetic.sub_funcs, x, y)
 
     mul_funcs = {}
 
@@ -95,11 +124,7 @@ class Arithmetic:
 
     @staticmethod
     def mul(x, y):
-        k = Arithmetic.get_key(x, y)
-        if k not in Arithmetic.mul_funcs:
-            # ERROR
-            return None
-        return Arithmetic.mul_funcs[k](x, y)
+        return Arithmetic.apply_2param_func(Arithmetic.mul_funcs, x, y)
 
     div_funcs = {}
 
@@ -109,11 +134,31 @@ class Arithmetic:
 
     @staticmethod
     def div(x, y):
-        k = Arithmetic.get_key(x, y)
-        if k not in Arithmetic.div_funcs:
+        return Arithmetic.apply_2param_func(Arithmetic.div_funcs, x, y)
+
+    equal_funcs = {}
+
+    @staticmethod
+    def install_equal_func(k, v):
+        Arithmetic.equal_funcs[k] = v
+
+    @staticmethod
+    def equal(x, y):
+        return Arithmetic.apply_2param_func(Arithmetic.equal_funcs, x, y)
+
+    print_funcs = {}
+
+    @staticmethod
+    def install_print_func(k, v):
+        Arithmetic.print_funcs[k] = v
+
+    @staticmethod
+    def print(x):
+        k = Arithmetic.get_type(x)
+        if k not in Arithmetic.print_funcs:
             # ERROR
             return None
-        return Arithmetic.div_funcs[k](x, y)
+        return Arithmetic.print_funcs[k](x)
 
     @staticmethod
     def get_key(x, y):
@@ -152,11 +197,21 @@ class ComplexOp:
         ANGLE = z1.angle() - z2.angle()
         return Complex("Polar", MAG, ANGLE)
 
+    @staticmethod
+    def equal(z1, z2):
+        return z1.real_part() == z2.real_part() and z1.imag_part() == z2.imag_part()
+
+    @staticmethod
+    def print(z):
+        return z.print()
+
 
 Arithmetic.install_add_func(("Complex", "Complex"), ComplexOp.add)
 Arithmetic.install_sub_func(("Complex", "Complex"), ComplexOp.sub)
 Arithmetic.install_mul_func(("Complex", "Complex"), ComplexOp.mul)
 Arithmetic.install_div_func(("Complex", "Complex"), ComplexOp.div)
+Arithmetic.install_equal_func(("Complex", "Complex"), ComplexOp.equal)
+Arithmetic.install_print_func("Complex", ComplexOp.print)
 
 
 ###############################################################################
@@ -280,11 +335,17 @@ class RationalOp:
     def equal(x, y):
         return x.numer() * y.denom() == x.denom() * y.numer()
 
+    @staticmethod
+    def print(x):
+        return x.print()
+
 
 Arithmetic.install_add_func(("Rational", "Rational"), RationalOp.add)
 Arithmetic.install_sub_func(("Rational", "Rational"), RationalOp.sub)
 Arithmetic.install_mul_func(("Rational", "Rational"), RationalOp.mul)
 Arithmetic.install_div_func(("Rational", "Rational"), RationalOp.div)
+Arithmetic.install_equal_func(("Rational", "Rational"), RationalOp.equal)
+Arithmetic.install_print_func("Rational", RationalOp.print)
 
 
 class Rational:
@@ -308,25 +369,39 @@ class Rational:
 
 ###############################################################################
 class IntegerOp:
+    @staticmethod
     def add(x, y):
         return Integer(x.num() + y.num())
 
+    @staticmethod
     def sub(x, y):
         return Integer(x.num() - y.num())
 
+    @staticmethod
     def mul(x, y):
         return Integer(x.num() * y.num())
 
+    @staticmethod
     def div(x, y):
         if x % y == 0:
             return Integer(x.num() // y.num())
         return Rational(x, y)
+
+    @staticmethod
+    def equal(x, y):
+        return x.num() == y.num()
+
+    @staticmethod
+    def print(x):
+        return x.print()
 
 
 Arithmetic.install_add_func(("Integer", "Integer"), IntegerOp.add)
 Arithmetic.install_sub_func(("Integer", "Integer"), IntegerOp.sub)
 Arithmetic.install_mul_func(("Integer", "Integer"), IntegerOp.mul)
 Arithmetic.install_div_func(("Integer", "Integer"), IntegerOp.div)
+Arithmetic.install_equal_func(("Integer", "Integer"), IntegerOp.equal)
+Arithmetic.install_print_func("Integer", IntegerOp.print)
 
 
 class Integer:
@@ -345,23 +420,37 @@ class Integer:
 
 ###############################################################################
 class NumberOp:
+    @staticmethod
     def add(x, y):
         return Number(x.num() + y.num())
 
+    @staticmethod
     def sub(x, y):
         return Number(x.num() - y.num())
 
+    @staticmethod
     def mul(x, y):
         return Number(x.num() * y.num())
 
+    @staticmethod
     def div(x, y):
         return Number(x.num() / y.num())
+
+    @staticmethod
+    def equal(x, y):
+        return x.num() == y.num()
+
+    @staticmethod
+    def print(x):
+        return x.print()
 
 
 Arithmetic.install_add_func(("Number", "Number"), NumberOp.add)
 Arithmetic.install_sub_func(("Number", "Number"), NumberOp.sub)
 Arithmetic.install_mul_func(("Number", "Number"), NumberOp.mul)
 Arithmetic.install_div_func(("Number", "Number"), NumberOp.div)
+Arithmetic.install_equal_func(("Number", "Number"), NumberOp.equal)
+Arithmetic.install_print_func("Number", NumberOp.print)
 
 
 class Number:
@@ -379,6 +468,129 @@ class Number:
 
 
 ###############################################################################
+class PolynomialOp:
+    @staticmethod
+    def add(p1, p2):
+        if not PolynomialOp.equal_variable(p1.variable(), p2.variable()):
+            # ERROR
+            return None
+        return Polynomial(
+            PolynomialOp.get_variable(p1, p2),
+            PolynomialOp.add_terms(p1.term_list(), p2.term_list()),
+        )
+
+    @staticmethod
+    def mul(p1, p2):
+        pass
+
+    @staticmethod
+    def equal(p1, p2):
+        if not PolynomialOp.equal_variable(p1.variable(), p2.variable()):
+            return False
+        return PolynomialOp.equal_terms(p1.term_list(), p2.term_list())
+
+    @staticmethod
+    def print(p):
+        return p.print()
+
+    @staticmethod
+    def add_terms(tlist1, tlist2):
+        if tlist1 is None:
+            return tlist2
+        if tlist2 is None:
+            return tlist1
+        item1 = head(tlist1)
+        item2 = head(tlist2)
+        if item1.th() < item2.th():
+            return (item2, PolynomialOp.add_terms(tlist1, tail(tlist2)))
+
+        if item1.th() > item2.th():
+            return (item1, PolynomialOp.add_terms(tail(tlist1), tlist2))
+
+        coeff = add(item1.coeff(), item2.coeff())
+        return pair(
+            PolynomialTerm(item1.th(), coeff),
+            PolynomialOp.add_terms(tail(tlist1), tail(tlist2)),
+        )
+
+    @staticmethod
+    def equal_variable(v1, v2):
+        if v1 == "":
+            return True
+        if v2 == "":
+            return True
+        return v1 == v2
+
+    @staticmethod
+    def get_variable(p1, p2):
+        if p1.variable() == "":
+            return p2.variable()
+        return p1.variable()
+
+    @staticmethod
+    def equal_terms(tlist1, tlist2):
+        return list_equal(tlist1, tlist2, PolynomialOp.equal_term)
+
+    @staticmethod
+    def equal_term(term1, term2):
+        if not equal(term1.th(), term2.th()):
+            return False
+        return equal(term1.coeff(), term2.coeff())
+
+
+Arithmetic.install_add_func(("Polynomial", "Polynomial"), PolynomialOp.add)
+Arithmetic.install_mul_func(("Polynomial", "Polynomial"), PolynomialOp.mul)
+Arithmetic.install_equal_func(("Polynomial", "Polynomial"), PolynomialOp.equal)
+Arithmetic.install_print_func("Polynomial", PolynomialOp.print)
+
+
+class Polynomial:
+    def __init__(self, variable, term_list):
+        self._variable = variable
+        self._term_list = term_list
+
+    def variable(self):
+        return self._variable
+
+    def term_list(self):
+        return self._term_list
+
+    def print(self):
+        return f"[{self.variable()} {self.print_term_list(self.term_list())}]"
+
+    # return f"{self.variable()}"
+
+    def print_term_list(self, term_list):
+        if term_list is None:
+            return None
+
+        if tail(term_list) is None:
+            return f"{head(term_list).print()}"
+
+        return f"{head(term_list).print()} {self.print_term_list(tail(term_list))}"
+
+    def ari_type(self):
+        return "Polynomial"
+
+
+class PolynomialTerm:
+    def __init__(self, th, coeff):
+        self._th = th
+        self._coeff = coeff
+
+    def th(self):
+        return self._th
+
+    def coeff(self):
+        return self._coeff
+
+    def print(self):
+        return f"{(ari_print(self.th()), ari_print(self.coeff()))}"
+
+
+###############################################################################
+
+
 class NumberToComplex:
     @staticmethod
     def convert(x):
@@ -433,6 +645,18 @@ class IntegerToComplex:
 Arithmetic.install_convert_func(("Integer", "Complex"), IntegerToComplex.convert)
 
 
+class ConstToPolynomial:
+    @staticmethod
+    def convert(x):
+        return Polynomial("", llist(PolynomialTerm(0, x)))
+
+
+Arithmetic.install_convert_func(("Complex", "Polynomial"), ConstToPolynomial.convert)
+Arithmetic.install_convert_func(("Rational", "Polynomial"), ConstToPolynomial.convert)
+Arithmetic.install_convert_func(("Number", "Polynomial"), ConstToPolynomial.convert)
+Arithmetic.install_convert_func(("Integer", "Polynomial"), ConstToPolynomial.convert)
+
+
 # test ########################################################################
 def test_add_complex():
     z1 = Complex("Rectangular", 1, 2)
@@ -440,3 +664,60 @@ def test_add_complex():
     z3 = add(z1, z2)
     assert z3.real_part() == 2
     assert z3.imag_part() == 4
+
+
+def test_add_int():
+    d = add(1, 2)
+    assert d.num() == 3
+
+
+def test_equal_int():
+    assert equal(1, 1)
+
+
+def test_equal_number():
+    assert equal(1.0, 1)
+
+
+def test_equal_ratioanl():
+    assert equal(Rational(1, 1), Rational(1, 1))
+
+
+def test_equal_complex():
+    assert equal(Complex("Rectangular", 0, 1), Complex("Rectangular", 0, 1))
+
+
+def test_equal_polynomial():
+    assert equal(
+        Polynomial("x", llist(PolynomialTerm(1, 1))),
+        Polynomial("x", llist(PolynomialTerm(1, 1))),
+    )
+
+    assert not equal(
+        Polynomial("x", llist(PolynomialTerm(1, 2))),
+        Polynomial("x", llist(PolynomialTerm(1, 1))),
+    )
+
+
+def test_add_poly():
+    p1 = Polynomial("x", llist(PolynomialTerm(2, 1), PolynomialTerm(1, 3)))
+    p2 = Polynomial("x", llist(PolynomialTerm(2, 1), PolynomialTerm(1, 3)))
+    assert equal(p1, p2)
+    p3 = add(p1, p2)
+    p4 = Polynomial("x", llist(PolynomialTerm(2, 2), PolynomialTerm(1, 6)))
+    assert equal(p3, p4)
+
+
+def test_add_poly_integer():
+    p1 = Polynomial("x", llist(PolynomialTerm(2, 1), PolynomialTerm(1, 3)))
+    p2 = 2
+    p3 = add(p1, p2)
+    p4 = Polynomial(
+        "x",
+        llist(
+            PolynomialTerm(2, 1),
+            PolynomialTerm(1, 3),
+            PolynomialTerm(0, Integer(2)),
+        ),
+    )
+    assert equal(p3, p4)
