@@ -52,6 +52,18 @@ class EnvironmentOp:
     def define_variable(var, val, env):
         env.def_var_val(var, val)
 
+    @staticmethod
+    def extend_enviroment(variables, values, env):
+        L1 = len(variables)
+        L2 = len(values)
+        if not L1 == L2:
+            # TODO: add ERROR message
+            return
+        nameTable = {}
+        for i in range(0, L1):
+            nameTable[variables[i]] = values[i]
+        return Environment(nameTable, env)
+
 
 class Environment:
     def __init__(self, nameTable, parent):
@@ -203,11 +215,121 @@ ComponentFactory.install_make_func(
 
 
 #########################################################################################
-class ApplicationOp:
+class IfOp:
     @staticmethod
     def evaluate(component, env):
+        if IfOp.is_true(evaluate(component.predicate(), env)):
+            return evaluate(component.consequent(), env)
+        return evaluate(component.alternative(), env)
+
+    @staticmethod
+    def is_true(val):
+        return val is True
+
+
+Interpreter.install_evaluate_func("If", IfOp.evaluate)
+
+
+class If:
+    def __init__(self, predicate, consequent, alternative):
+        self._predicate = predicate
+        self._consequent = consequent
+        self._alternative = alternative
+
+    def predicate(self):
+        return self._predicate
+
+    def consequent(self):
+        return self._consequent
+
+    def alternative(self):
+        return self._alternative
+
+    def type(self):
+        return "If"
+
+
+ComponentFactory.install_make_func(
+    "If",
+    lambda predicate, consequent, alternative: If(predicate, consequent, alternative),
+)
+
+
+#########################################################################################
+class SequenceOp:
+    @staticmethod
+    def evaluate(component, env):
+        rt = None
+        for action in component.actions():
+            rt = evaluate(action, env)
+        return rt
+
+
+Interpreter.install_evaluate_func("Sequence", SequenceOp.evaluate)
+
+
+class Sequence:
+    def __init__(self, actions):
+        self._actions = actions
+
+    def actions(self):
+        return self._actions
+
+    def type(self):
+        return "Sequence"
+
+
+ComponentFactory.install_make_func("Sequence", lambda actions: Sequence(actions))
+
+
+#########################################################################################
+class LambdaOp:
+    @staticmethod
+    def evaluate(component, env):
+        print(component.parameters())
+        print(component.body())
+        return FunctionFactory.make(
+            "CoupoundFunc", component.body(), component.parameters(), env
+        )
+
+
+Interpreter.install_evaluate_func("Lambda", LambdaOp.evaluate)
+
+
+class Lambda:
+    def __init__(self, parameters, body):
+        self._parameters = parameters
+        self._body = body
+
+    def parameters(self):
+        return self._parameters
+
+    def body(self):
+        return self._body
+
+    def type(self):
+        return "Lambda"
+
+
+ComponentFactory.install_make_func(
+    "Lambda", lambda parameters, body: Lambda(parameters, body)
+)
+
+
+#########################################################################################
+class ApplicationOp:
+    @staticmethod
+    def convert(func_name):
+        if not isinstance(func_name, str):
+            return func_name
+        return ComponentFactory.make("Name", func_name)
+
+    @staticmethod
+    def evaluate(component, env):
+        func = component.func_expression()
+        func = ApplicationOp.convert(func)
         return apply(
-            evaluate(component.func_expression(), env),
+            evaluate(func, env),
             EnvironmentOp.list_of_values(component.arg_expressions(), env),
         )
 
@@ -239,6 +361,7 @@ ComponentFactory.install_make_func(
 FunctionFactory = ObjFactory()
 
 
+#########################################################################################
 class PrimitiveFuncOp:
     @staticmethod
     def apply(func, args):
@@ -263,6 +386,43 @@ FunctionFactory.install_make_func("PrimitiveFunc", lambda func: PrimitiveFunc(fu
 
 
 #########################################################################################
+class CoupoundFuncOp:
+    @staticmethod
+    def apply(func, args):
+        return evaluate(
+            ComponentFactory.make("Sequence", func.body()),
+            EnvironmentOp.extend_enviroment(func.parameters(), args, func.env()),
+        )
+
+
+Interpreter.install_apply_func("CoupoundFunc", CoupoundFuncOp.apply)
+
+
+class CoupoundFunc:
+    def __init__(self, body, parameters, env):
+        self._body = body
+        self._parameters = parameters
+        self._env = env
+
+    def body(self):
+        return self._body
+
+    def parameters(self):
+        return self._parameters
+
+    def env(self):
+        return self._env
+
+    def type(self):
+        return "CoupoundFunc"
+
+
+FunctionFactory.install_make_func(
+    "CoupoundFunc", lambda body, parameters, env: CoupoundFunc(body, parameters, env)
+)
+
+
+#########################################################################################
 def build_top_env():
     def add(*args):
         L = len(args)
@@ -273,9 +433,13 @@ def build_top_env():
             rt = rt + args[i]
         return rt
 
+    def equal(v1, v2):
+        return v1 == v2
+
     nameTable = {}
 
     nameTable["+"] = FunctionFactory.make("PrimitiveFunc", add)
+    nameTable["=="] = FunctionFactory.make("PrimitiveFunc", equal)
 
     return Environment(nameTable, None)
 
@@ -322,21 +486,10 @@ def test_apply_primitive_func():
 
 def test_application_v1():
     top_env = build_top_env()
-    func_expression = ComponentFactory.make("Name", "+")
-    arg_expressions = [
-        ComponentFactory.make("Literal", 5),
-        ComponentFactory.make("Literal", 2),
-    ]
-    component = ComponentFactory.make("Application", func_expression, arg_expressions)
+    component = ComponentFactory.make("Application", "+", [5, 2])
     assert evaluate(component, top_env) == 7
     top_env = build_top_env()
-    func_expression = ComponentFactory.make("Name", "+")
-    arg_expressions = [
-        ComponentFactory.make("Literal", "A"),
-        ComponentFactory.make("Literal", "B"),
-        ComponentFactory.make("Literal", "C"),
-    ]
-    component = ComponentFactory.make("Application", func_expression, arg_expressions)
+    component = ComponentFactory.make("Application", "+", ["A", "B", "C"])
     assert evaluate(component, top_env) == "ABC"
 
 
@@ -346,3 +499,103 @@ def test_definition():
     assert evaluate(component, top_env) == "ok"
     name = ComponentFactory.make("Name", "smh")
     assert evaluate(name, top_env) == "shengmh"
+
+
+def test_equal():
+    top_env = build_top_env()
+    component = ComponentFactory.make("Application", "==", [1, 1])
+    assert evaluate(component, top_env)
+
+
+def test_if():
+    top_env = build_top_env()
+    predicate = ComponentFactory.make("Application", "==", [1, 2])
+    consequent = ComponentFactory.make("Literal", True)
+    alternative = ComponentFactory.make("Literal", False)
+    component = ComponentFactory.make("If", predicate, consequent, alternative)
+    assert not evaluate(component, top_env)
+
+
+def test_sequence():
+    top_env = build_top_env()
+    component = ComponentFactory.make(
+        "Sequence",
+        [
+            1,
+            2,
+            3,
+            ComponentFactory.make("Application", "+", [1, 2, 3]),
+        ],
+    )
+    assert evaluate(component, top_env) == 6
+
+
+def test_definition_v2():
+    top_env = build_top_env()
+    addition = ComponentFactory.make("Name", "+")
+    evaluate(ComponentFactory.make("Definition", "add", addition), top_env)
+    assert (
+        evaluate(ComponentFactory.make("Application", "add", [1, 2, 3]), top_env) == 6
+    )
+
+
+def test_compound_func():
+    top_env = build_top_env()
+    func = FunctionFactory.make(
+        "CoupoundFunc",
+        [
+            ComponentFactory.make(
+                "Application",
+                "+",
+                [
+                    ComponentFactory.make("Name", "a"),
+                    ComponentFactory.make("Name", "b"),
+                ],
+            )
+        ],
+        ["a", "b"],
+        top_env,
+    )
+    assert apply(func, [1, 2]) == 3
+
+
+def test_lambda():
+    top_env = build_top_env()
+    lambda_add = ComponentFactory.make(
+        "Lambda",
+        ["a", "b"],
+        [
+            ComponentFactory.make(
+                "Application",
+                "+",
+                [
+                    ComponentFactory.make("Name", "a"),
+                    ComponentFactory.make("Name", "b"),
+                ],
+            )
+        ],
+    )
+    func = evaluate(lambda_add, top_env)
+    assert apply(func, [1, 2]) == 3
+
+
+def test_lambda_add():
+    top_env = build_top_env()
+    lambda_add = ComponentFactory.make(
+        "Lambda",
+        ["a", "b"],
+        [
+            ComponentFactory.make(
+                "Application",
+                "+",
+                [
+                    ComponentFactory.make("Name", "a"),
+                    ComponentFactory.make("Name", "b"),
+                ],
+            )
+        ],
+    )
+    def_add = ComponentFactory.make("Definition", "add", lambda_add)
+    evaluate(def_add, top_env)
+    call_add = ComponentFactory.make("Application", "add", [1, 2])
+    assert evaluate(call_add, top_env) == 3
