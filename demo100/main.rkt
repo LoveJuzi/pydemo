@@ -26,48 +26,100 @@
   (DISPATCH (cons 'tag tag-name)
             (cons 'object object)))
 
+(define (FUNCTABLES)
+  (define (DISPATCHFUNC)
+    (define func_table (make-hash))
+    (define (install k v) (hash-set! func_table k v))
+    (define (get k) (hash-ref func_table k))
+    (DISPATCH (cons 'install install)
+              (cons 'get get)))
+  (define func_tables (make-hash))
+  (define (install k1 k2 v)
+    (cond 
+      ((hash-has-key? func_tables k1) ((hash-ref func_tables k1) 'install k2 v))
+      (else (hash-set! func_tables k1 (DISPATCHFUNC))
+            (install k1 k2 v))))
+  (define (get k1 k2) ((hash-ref func_tables k1) 'get k2))
+  (DISPATCH (cons 'install install)
+            (cons 'get get)))
+          
+(define (INSTALLFUNC tables)
+  (lambda (k1 k2 v) (tables 'install k1 k2 v)))
+
 (define (APPLYEXT func . args)
-  (apply (car func) (cdr func) args))
-
-(define (FUNCTABLE)
-  (define func_table (make-hash))
-  (define (install_func k v) (hash-set! func_table k v))
-  (define (get_func k) (hash-ref func_table k))
-  (DISPATCH (cons 'install install_func)
-            (cons 'get get_func)))
-
-(define (INSTALLFUNC table)
-  (lambda (k v) (table 'install k v)))
-
+  (cond 
+    ((pair? func) (apply (car func) (cdr func) args)) ; means object call
+    (else (apply func args)))) ;means func call
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ARITHMETIC_OP
   ((lambda ()
+     (define func_tables (FUNCTABLES))
      (define (get_op_type ari1 ari2)
        (cons (ari1 'tag) (ari2 'tag)))
-     (define add_func_table (FUNCTABLE))
      (define (add ari1 ari2) 
        (TAGOBJ (ari1 'tag)
-               (APPLYEXT (add_func_table 'get (get_op_type ari1 ari2)) 
+               (APPLYEXT (func_tables 'get 'add (get_op_type ari1 ari2)) 
                          (ari1 'object)
                          (ari2 'object))))
-     (define sub_func_table (FUNCTABLE))
      (define (sub ari1 ari2)
        (TAGOBJ (ari1 'tag)
-               (APPLYEXT (sub_func_table 'get (get_op_type ari1 ari2))
+               (APPLYEXT (func_tables 'get 'sub (get_op_type ari1 ari2))
                          (ari1 'object)
                          (ari2 'object))))
-     (DISPATCH (cons 'install-add-func (INSTALLFUNC add_func_table))
+     (define (mul ari1 ari2)
+       (TAGOBJ (ari1 'tag)
+               (APPLYEXT (func_tables 'get 'mul (get_op_type ari1 ari2))
+                         (ari1 'object)
+                         (ari2 'object))))
+     (define (div ari1 ari2)
+       (TAGOBJ (ari1 'tag)
+               (APPLYEXT (func_tables 'get 'div (get_op_type ari1 ari2))
+                         (ari1 'object)
+                         (ari2 'object))))
+     (define (equal ari1 ari2)
+       (APPLYEXT (func_tables 'get 'equal (get_op_type ari1 ari2))
+                 (ari1 'object)
+                 (ari2 'object)))
+     (DISPATCH (cons 'install-func (INSTALLFUNC func_tables))
                (cons 'add add)
-               (cons 'install-sub-func (INSTALLFUNC sub_func_table))
-               (cons 'sub sub)))))
+               (cons 'sub sub)
+               (cons 'mul mul)
+               (cons 'div div)
+               (cons 'equal equal)))))
 
 (define (ARITHMETIC tag . args)
   (define obj (apply ARITHMETIC_FACTORY 'make tag args))
   (TAGOBJ tag obj))
 
 (define ARITHMETIC_FACTORY (FACTORY))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define INTEGER_OP
+  ((lambda ()
+     (define (add num1 num2) (INTEGER (+ (num1 'val) (num2 'val))))
+     (define (sub num1 num2) (INTEGER (- (num1 'val) (num2 'val))))
+     (define (mul num1 num2) (INTEGER (* (num1 'val) (num2 'val))))
+     (define (div num1 num2) (INTEGER (/ (num1 'val) (num2 'val))))
+     (define (equal num1 num2) (= (num1 'val) (num2 'val)))
+     (DISPATCH (cons '+ add)
+               (cons '- sub)
+               (cons '* mul)
+               (cons '/ div)
+               (cons '= equal)))))
+
+(ARITHMETIC_OP 'install-func 'add (cons 'INTEGER 'INTEGER) (cons INTEGER_OP '+))
+(ARITHMETIC_OP 'install-func 'sub (cons 'INTEGER 'INTEGER) (cons INTEGER_OP '-))
+(ARITHMETIC_OP 'install-func 'mul (cons 'INTEGER 'INTEGER) (cons INTEGER_OP '*))
+(ARITHMETIC_OP 'install-func 'div (cons 'INTEGER 'INTEGER) (cons INTEGER_OP '/))
+(ARITHMETIC_OP 'install-func 'equal (cons 'INTEGER 'INTEGER) (cons INTEGER_OP '=))
+
+(define (INTEGER num)
+  (DISPATCH (cons 'val (lambda () num))))
+
+(ARITHMETIC_FACTORY 'install 'INTEGER INTEGER)
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define RAT_OP
@@ -95,7 +147,11 @@
               (cons '/ div) 
               (cons '= equal)))))
 
-(ARITHMETIC_OP 'install-add-func (cons 'RAT 'RAT) (cons RAT_OP '+))
+(ARITHMETIC_OP 'install-func 'add (cons 'RAT 'RAT) (cons RAT_OP '+))
+(ARITHMETIC_OP 'install-func 'sub (cons 'RAT 'RAT) (cons RAT_OP '-))
+(ARITHMETIC_OP 'install-func 'mul (cons 'RAT 'RAT) (cons RAT_OP '*))
+(ARITHMETIC_OP 'install-func 'div (cons 'RAT 'RAT) (cons RAT_OP '/))
+(ARITHMETIC_OP 'install-func 'equal (cons 'RAT 'RAT) (cons RAT_OP '=))
 
 (define (RAT n d)
   (define rat (cons n d))
@@ -107,6 +163,7 @@
   dispatch)
 
 (ARITHMETIC_FACTORY 'install 'RAT RAT)
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define COMPLEX_OP
@@ -196,9 +253,23 @@
 (ari2 'tag)
 (ari2 'object)
 
+(ARITHMETIC_OP 'add ari1 ari2)
+
 ((ARITHMETIC_OP 'add ari1 ari2) 'tag)
 (((ARITHMETIC_OP 'add ari1 ari2) 'object) 'numer)
 (((ARITHMETIC_OP 'add ari1 ari2) 'object) 'denom)
+
+(ARITHMETIC_OP 'equal
+               (ARITHMETIC_OP 'mul (ARITHMETIC 'INTEGER 3) (ARITHMETIC 'INTEGER 3))
+               (ARITHMETIC 'INTEGER 9))
+
+(ARITHMETIC_OP 'equal
+               (ARITHMETIC 'INTEGER 3)
+               (ARITHMETIC 'INTEGER 9))
+
+(INTEGER_OP '= (INTEGER 3) (INTEGER 3))
+
+(ARITHMETIC_OP 'add 1 2)
 
 
 ;check-equal?: 检查两个值是否相等。
