@@ -61,7 +61,8 @@
     ((list? exp)
      (cond
        ((eq? (car exp) 'quote) (EVAL (EXPRESSION 'SYMBOL (cadr exp)) env))
-       ((eq? (car exp) 'lambda) (EVAL (EXPRESSION 'LAMBDA (cadr exp) (caddr exp)) env))))
+       ((eq? (car exp) 'lambda) (EVAL (EXPRESSION 'LAMBDA (cadr exp) (caddr exp)) env))
+       ((eq? (car exp) 'begin) (EVAL (EXPRESSION 'BEGIN (cdr exp)) env))))
     (else (EXPRESSION_OP 'EVAL exp env))))
     
 
@@ -116,8 +117,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define EXP_LAMBDA_OP
   ((lambda ()
-     (define (EVAL exp env)
-       (CLOURSE (exp 'params) (exp 'body) env))
+     (define (EVAL obj env)
+       (CLOURSE (obj 'params) (obj 'body) env))
      (DISPATCH (cons 'EVAL EVAL)))))
 
 (EXPRESSION_OP 'install-func 'EVAL 'LAMBDA (cons EXP_LAMBDA_OP 'EVAL))
@@ -132,6 +133,43 @@
   (DISPATCH (cons 'params (lambda () params))
             (cons 'body (lambda () body))
             (cons 'env (lambda () env))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define EXP_BEGIN_OP
+  ((lambda ()
+     (define (empty? exps) (null? exps))
+     (define (first-exp exps) (car exps))
+     (define (rest-exp exps) (cdr exps))
+     (define (EVAL_EXP_IMPL exps env) 
+       (cond
+         ((empty? exps) '())
+         ((empty? (rest-exp exps)) (EVAL (first-exp exps) env))
+         (else (EVAL (first-exp exps) env)
+               (EVAL_EXP_IMPL (rest-exp exps) env))))
+     (define (EVAL_EXP obj env)
+       (EVAL_EXP_IMPL (obj 'exps) env))
+     (DISPATCH (cons 'EVAL EVAL_EXP)))))
+
+(EXPRESSION_OP 'install-func 'EVAL 'BEGIN (cons EXP_BEGIN_OP 'EVAL))
+
+(define (EXP_BEGIN exps)
+  (DISPATCH (cons 'exps (lambda () exps))))
+
+(EXPRESSION_FACTORY 'install 'BEGIN EXP_BEGIN)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define EXP_COND_OP
+  ((lambda ()
+     (define (EVAL obj env)
+       '())
+     (DISPATCH (cons 'EVAL EVAL)))))
+
+(EXPRESSION_OP 'install-func 'EVAL 'COND (cons EXP_COND_OP 'EVAL))
+
+(define (EXP_COND seq)
+  (DISPATCH (cons 'seq (lambda () seq))))
+
+(EXPRESSION_FACTORY 'install 'COND EXP_COND)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -153,3 +191,16 @@
 
 ;(EVAL '(lambda () 1) '())
 ;(define input ''a)
+
+(define input '(cond ((eq? 1 1) (+ 1 1) (+ 1 2))))
+(car input)
+(cadr input) ; first seq
+(caadr input) ; pred
+(cadadr input) ; seq
+
+(define input2 '(begin 1 2 3))
+(car input2)
+(cdr input2)
+
+(EVAL '(begin 1 2 3 "HELLO") '())
+
