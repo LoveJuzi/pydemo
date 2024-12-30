@@ -36,6 +36,10 @@ func Div(o1 Arithmetic, o2 Arithmetic) Arithmetic {
 }
 
 func Equal(o1 Arithmetic, o2 Arithmetic) bool {
+	o1, o2, ok := convInnerType(o1, o2)
+	if !ok {
+		return false
+	}
 	return equalTable[getTagPair(o1, o2)](o1, o2)
 }
 
