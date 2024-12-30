@@ -38,3 +38,11 @@ func TestComplex(t *testing.T) {
 	assert.Equal(t, "Complex", o3.Tag())
 	assert.True(t, Equal(o3, MakeArithmetic("Complex", "Rectangular", 3, 3)))
 }
+
+func TestInteger2Number(t *testing.T) {
+	o1 := MakeArithmetic("Integer", 2)
+	o2 := MakeArithmetic("Number", 3)
+	o3 := Add(o2, o1)
+	assert.Equal(t, "Number", o3.Tag())
+	assert.True(t, Equal(o3, MakeArithmetic("Number", 5)))
+}

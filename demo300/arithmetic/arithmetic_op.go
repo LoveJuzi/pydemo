@@ -4,18 +4,34 @@ import "demo300/rat"
 import "demo300/complex"
 
 func Add(o1 Arithmetic, o2 Arithmetic) Arithmetic {
+	o1, o2, ok := convInnerType(o1, o2)
+	if !ok {
+		return nil
+	}
 	return addTable[getTagPair(o1, o2)](o1, o2)
 }
 
 func Sub(o1 Arithmetic, o2 Arithmetic) Arithmetic {
+	o1, o2, ok := convInnerType(o1, o2)
+	if !ok {
+		return nil
+	}
 	return subTable[getTagPair(o1, o2)](o1, o2)
 }
 
 func Mul(o1 Arithmetic, o2 Arithmetic) Arithmetic {
+	o1, o2, ok := convInnerType(o1, o2)
+	if !ok {
+		return nil
+	}
 	return mulTable[getTagPair(o1, o2)](o1, o2)
 }
 
 func Div(o1 Arithmetic, o2 Arithmetic) Arithmetic {
+	o1, o2, ok := convInnerType(o1, o2)
+	if !ok {
+		return nil
+	}
 	return divTable[getTagPair(o1, o2)](o1, o2)
 }
 
@@ -25,6 +41,21 @@ func Equal(o1 Arithmetic, o2 Arithmetic) bool {
 
 func getTagPair(o1 Arithmetic, o2 Arithmetic) string {
 	return o1.Tag() + " " + o2.Tag()
+}
+
+func convInnerType(o1 Arithmetic, o2 Arithmetic) (Arithmetic, Arithmetic, bool) {
+	f1 := convTable[o1.Tag()+"->"+o2.Tag()]
+	f2 := convTable[o2.Tag()+"->"+o1.Tag()]
+	if f1 != nil {
+		o1 = f1(o1)
+	}
+	if f2 != nil {
+		o2 = f2(o2)
+	}
+	if o1.Tag() != o2.Tag() {
+		return o1, o2, false
+	}
+	return o1, o2, true
 }
 
 type ariOpFunc func(Arithmetic, Arithmetic) Arithmetic
@@ -40,6 +71,10 @@ var divTable = make(map[string]ariOpFunc)
 type equalFunc func(Arithmetic, Arithmetic) bool
 
 var equalTable = make(map[string]equalFunc)
+
+type convFunc func(Arithmetic) Arithmetic
+
+var convTable = make(map[string]convFunc)
 
 func init() {
 	addTable["Integer Integer"] = func(o1 Arithmetic, o2 Arithmetic) Arithmetic {
@@ -153,5 +188,31 @@ func init() {
 		return complex.Equal(
 			o1.(*arithmeticComplex).Object(),
 			o1.(*arithmeticComplex).Object())
+	}
+
+	convTable["Integer->Rat"] = func(o Arithmetic) Arithmetic {
+		return MakeArithmetic("Rat", o.(*arithmeticInteger).Object(), 1)
+	}
+	convTable["Integer->Number"] = func(o Arithmetic) Arithmetic {
+		return MakeArithmetic("Number", o.(*arithmeticInteger).Object())
+	}
+	convTable["Integer->Complex"] = func(o Arithmetic) Arithmetic {
+		return MakeArithmetic("Complex", "Rectangular", o.(*arithmeticInteger).Object(), 0)
+	}
+	convTable["Rat->Number"] = func(o Arithmetic) Arithmetic {
+		return MakeArithmetic(
+			"Number",
+			float64(o.(*arithmeticRat).Object().Numer())/
+				float64(o.(*arithmeticRat).Object().Denom()))
+	}
+	convTable["Rat->Complex"] = func(o Arithmetic) Arithmetic {
+		return MakeArithmetic("Complex",
+			float64(o.(*arithmeticRat).Object().Numer())/
+				float64(o.(*arithmeticRat).Object().Denom()),
+			0)
+	}
+	convTable["Number->Complex"] = func(o Arithmetic) Arithmetic {
+		return MakeArithmetic("Complex",
+			o.(*arithmeticNumber).Object(), 0)
 	}
 }
