@@ -26,8 +26,25 @@ func Equal(o1 Polynomial, o2 Polynomial) bool {
 	return true
 }
 
+func getVariable(o1 Polynomial, o2 Polynomial) (string, bool) {
+	if o1.Variable() == o2.Variable() {
+		return o1.Variable(), true
+	}
+
+	if o1.Variable() == "" {
+		return o2.Variable(), true
+	}
+
+	if o2.Variable() == "" {
+		return o1.Variable(), true
+	}
+
+	return "", false
+}
+
 func Add(o1 Polynomial, o2 Polynomial) Polynomial {
-	if o1.Variable() != o2.Variable() {
+	variable, ok := getVariable(o1, o2)
+	if !ok {
 		return nil
 	}
 	tlist1 := o1.TermList()
@@ -66,5 +83,5 @@ func Add(o1 Polynomial, o2 Polynomial) Polynomial {
 		i++
 		j++
 	}
-	return MakePolynomial(o1.Variable(), termList)
+	return MakePolynomial(variable, termList)
 }
