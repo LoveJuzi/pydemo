@@ -36,7 +36,7 @@ func init() {
 		}
 	}
 
-	arithmetic.AddTable["Polynomial Polynomial"] = func(o1 arithmetic.Arithmetic,
+	arithmetic.AddTable[[2]string{"Polynomial", "Polynomial"}] = func(o1 arithmetic.Arithmetic,
 		o2 arithmetic.Arithmetic) arithmetic.Arithmetic {
 		return &arithmeticPolynomial{
 			_polynomial: Add(o1.(*arithmeticPolynomial).Object(),

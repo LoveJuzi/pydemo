@@ -8,7 +8,7 @@ func Add(o1 Arithmetic, o2 Arithmetic) Arithmetic {
 	if !ok {
 		return nil
 	}
-	return AddTable[getTagPair(o1, o2)](o1, o2)
+	return AddTable[getTagPair2(o1, o2)](o1, o2)
 }
 
 func Sub(o1 Arithmetic, o2 Arithmetic) Arithmetic {
@@ -47,6 +47,10 @@ func getTagPair(o1 Arithmetic, o2 Arithmetic) string {
 	return o1.Tag() + " " + o2.Tag()
 }
 
+func getTagPair2(o1 Arithmetic, o2 Arithmetic) [2]string {
+	return [2]string{o1.Tag(), o2.Tag()}
+}
+
 func convInnerType(o1 Arithmetic, o2 Arithmetic) (Arithmetic, Arithmetic, bool) {
 	f1 := ConvTable[o1.Tag()+"->"+o2.Tag()]
 	f2 := ConvTable[o2.Tag()+"->"+o1.Tag()]
@@ -64,7 +68,7 @@ func convInnerType(o1 Arithmetic, o2 Arithmetic) (Arithmetic, Arithmetic, bool) 
 
 type ariOpFunc func(Arithmetic, Arithmetic) Arithmetic
 
-var AddTable = make(map[string]ariOpFunc)
+var AddTable = make(map[[2]string]ariOpFunc)
 
 var subTable = make(map[string]ariOpFunc)
 
@@ -81,7 +85,7 @@ type convFunc func(Arithmetic) Arithmetic
 var ConvTable = make(map[string]convFunc)
 
 func init() {
-	AddTable["Integer Integer"] = func(o1 Arithmetic, o2 Arithmetic) Arithmetic {
+	AddTable[[2]string{"Integer", "Integer"}] = func(o1 Arithmetic, o2 Arithmetic) Arithmetic {
 		return MakeArithmetic("Integer",
 			o1.(*arithmeticInteger).Object()+
 				o2.(*arithmeticInteger).Object())
@@ -116,7 +120,7 @@ func init() {
 		return o1.(*arithmeticInteger).Object() == o2.(*arithmeticInteger).Object()
 	}
 
-	AddTable["Number Number"] = func(o1 Arithmetic, o2 Arithmetic) Arithmetic {
+	AddTable[[2]string{"Number", "Number"}] = func(o1 Arithmetic, o2 Arithmetic) Arithmetic {
 		return MakeArithmetic("Number",
 			o1.(*arithmeticNumber).Object()+o2.(*arithmeticNumber).Object())
 	}
@@ -136,7 +140,7 @@ func init() {
 		return o1.(*arithmeticNumber).Object() == o2.(*arithmeticNumber).Object()
 	}
 
-	AddTable["Rat Rat"] = func(o1 Arithmetic, o2 Arithmetic) Arithmetic {
+	AddTable[[2]string{"Rat", "Rat"}] = func(o1 Arithmetic, o2 Arithmetic) Arithmetic {
 		return &arithmeticRat{
 			_rat: rat.Add(o1.(*arithmeticRat).Object(), o2.(*arithmeticRat).Object()),
 		}
@@ -160,7 +164,7 @@ func init() {
 		return rat.Equal(o1.(*arithmeticRat).Object(), o2.(*arithmeticRat).Object())
 	}
 
-	AddTable["Complex Complex"] = func(o1 Arithmetic, o2 Arithmetic) Arithmetic {
+	AddTable[[2]string{"Complex", "Complex"}] = func(o1 Arithmetic, o2 Arithmetic) Arithmetic {
 		return &arithmeticComplex{
 			_complex: complex.Add(
 				o1.(*arithmeticComplex).Object(),
