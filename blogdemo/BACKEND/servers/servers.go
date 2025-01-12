@@ -13,7 +13,7 @@ func CreatePost(post *models.Post) error {
 func GetUserId(email string) (uint, error) {
 	var user models.User
 	if err := models.DB.Select("id").Where("email = ?", email).First(&user).Error; err != nil {
-		return 0, nil
+		return 0, err
 	}
 	return user.ID, nil
 }
