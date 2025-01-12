@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	models.ConnectDatabase()
+	models.ConnectDatabase("localhost", 5432, "postgres", "201381", "postgres", "disable")
 	r := routes.SetupRouter()
 	r.Run()
 }

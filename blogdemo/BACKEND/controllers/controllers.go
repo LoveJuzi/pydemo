@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"blog/models"
+	"blog/servers"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -14,7 +15,7 @@ func CreateUser(c *gin.Context) {
 		return
 	}
 
-	if err := models.DB.Create(&user).Error; err != nil {
+	if err := servers.CreateUser(&user); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -29,7 +30,7 @@ func CreatePost(c *gin.Context) {
 		return
 	}
 
-	if err := models.DB.Create(&post).Error; err != nil {
+	if err := servers.CreatePost(&post); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -39,7 +40,7 @@ func CreatePost(c *gin.Context) {
 
 func GetPosts(c *gin.Context) {
 	var posts []models.Post
-	if err := models.DB.Preload("User").Find(&posts).Error; err != nil {
+	if err := servers.GetPosts(&posts); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
