@@ -1,7 +1,8 @@
-package servers
+package servers_test
 
 import (
 	"blog/models"
+	"blog/servers"
 	"fmt"
 	"log"
 	"os"
@@ -47,31 +48,31 @@ func TestMain(m *testing.M) {
 
 func TestCreateUser(t *testing.T) {
 	testUser := &models.User{Name: "shengmh", Email: "123@123.com", Password: "123"}
-	err := CreateUser(testUser)
+	err := servers.CreateUser(testUser)
 	assert.Equal(t, nil, err)
 }
 
 func TestGetUserId(t *testing.T) {
-	if _, err := GetUserId("123@123.com"); err != nil {
+	if _, err := servers.GetUserId("123@123.com"); err != nil {
 		assert.Equal(t, nil, err)
 	}
-	if _, err := GetUserId("asdf"); err != nil {
+	if _, err := servers.GetUserId("asdf"); err != nil {
 		assert.Equal(t, nil, err)
 	}
 }
 
 func TestCreatePost(t *testing.T) {
-	uid, _ := GetUserId("123@123.com")
+	uid, _ := servers.GetUserId("123@123.com")
 
 	testPost := &models.Post{Title: "第一篇博客", Content: "ABCD", UserID: uid}
-	if err := CreatePost(testPost); err != nil {
+	if err := servers.CreatePost(testPost); err != nil {
 		assert.Equal(t, nil, err)
 	}
 }
 
 func TestGetPosts(t *testing.T) {
 	var posts []models.Post
-	if err := GetPosts(&posts); err != nil {
+	if err := servers.GetPosts(&posts); err != nil {
 		assert.Equal(t, nil, err)
 	}
 }
