@@ -10,5 +10,21 @@
             "username": "postgres",
             "password": "201381"
         }
-    ]
+    ],
+    // "editor.formatOnSave": true,
+    "[vue]": {
+        "editor.formatOnSave": true
+    },
+    "[golang]": {
+        "editor.formatOnSave": true
+    },
+    "[javascript]": {
+        "editor.formatOnSave": true
+    },
+    "[bash]": {
+        "editor.formatOnSave": true
+    },
+    "[json]": {
+        "editor.formatOnSave": true
+    },
 }
